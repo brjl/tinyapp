@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/brjl/tinyapp/issues"
   },
-  "homepage": "https://github.com/brjl/tinyapp#readme"
+  "homepage": "https://github.com/brjl/tinyapp#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
 }
