@@ -56,7 +56,7 @@ console.log('Deleting URL')
 
 app.post("/urls/:shortURL", (req, res)=>{
 console.log('Edited URL')
-longURL = urlDatabase[req.params.shortURL]
+urlDatabase[req.params.shortURL] = req.body.longURL
 res.redirect(`/urls`);
 });
 app.get("/urls.json", (req, res) => {
