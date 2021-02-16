@@ -15,7 +15,7 @@ const urlDatabase = {
 };
 
 app.get("/", (req, res) => {
-  res.send("Hello!");
+  res.send("Hello! There's nothing here. Sorry about that.");
 });
 
 app.get("/urls", (req, res) => {
@@ -48,6 +48,11 @@ app.get("/u/:shortURL", (req, res) => {
   res.redirect(longURL);
 });
 
+app.post("/urls/:shortURL/delete", (req, res) => {
+console.log('Deleting URL')
+  delete urlDatabase[req.params.shortURL];
+  res.redirect(`/urls`)
+});
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
