@@ -60,27 +60,29 @@ app.get("/register", (req, res) => {
 
 app.post("/register", (req, res) => {
   //add a new user to the global users object. The user object should include the user's id, email and password
-  //set a user_id cookie containing the user's newly generated ID
-  //console.log(req.body)
-  //console.log(req.body.email)
-  //console.log(req.body.password)
+  
   let newUserID = generateRandomString();
   const newUser = {
     id: newUserID,
     email: req.body.email,
     password: req.body.password,
   };
-
-  res.cookie("user_id", newUser.id);
- 
-
-// for (const key in newUser) {
+const objectAppend = Object.assign(users, newUser);
+console.log(objectAppend)
+console.log(users)
+  // for (const key in newUser) {
   //   //console.log(newUser[{key}])
-
-  //    newUser[{key}]
+  //   const objectAppend = Object.assign(users, newUser[{key}]);
+  //    //console.log(newUser[{key}])
 
   // }
-  console.log(newUser);
+
+  
+//set a user_id cookie containing the user's newly generated ID
+  res.cookie("user_id", newUserID);
+ 
+
+ 
 
  
   
@@ -88,8 +90,9 @@ app.post("/register", (req, res) => {
   //Redirect the user to the /urls page
   res.redirect(`/urls`);
 
-  //Test that the users object is properly being appended to. You can insert a console.log or debugger prior to the redirect logic to inspect what data the object contains.
-  //Also test that the user_id cookie is being set correctly upon redirection.
+  //Test that the users object is properly being appended to. 
+  //You can insert a console.log or debugger prior to the redirect logic to inspect what data the object contains.
+  
 });
 
 app.get("/urls", (req, res) => {
