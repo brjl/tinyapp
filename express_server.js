@@ -55,6 +55,15 @@ app.get("/", (req, res) => {
   res.send("Hello! There's nothing here. Sorry about that.");
 });
 
+app.get("/login", (req, res) => {
+  const templateVars = {
+    user: users[req.cookies["user_id"]],
+  };
+  res.render("urls_login", templateVars)
+
+  
+});
+
 app.post("/login", (req, res) => {
   console.log(req.body.username);
   //set a cookie named username to the value submitted in the request body via the login form
