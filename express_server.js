@@ -60,39 +60,20 @@ app.get("/register", (req, res) => {
 
 app.post("/register", (req, res) => {
   //add a new user to the global users object. The user object should include the user's id, email and password
-  
+
   let newUserID = generateRandomString();
   const newUser = {
     id: newUserID,
     email: req.body.email,
     password: req.body.password,
   };
-const objectAppend = Object.assign(users, newUser);
-console.log(objectAppend)
-console.log(users)
-  // for (const key in newUser) {
-  //   //console.log(newUser[{key}])
-  //   const objectAppend = Object.assign(users, newUser[{key}]);
-  //    //console.log(newUser[{key}])
+  users[newUserID] = newUser;
 
-  // }
-
-  
-//set a user_id cookie containing the user's newly generated ID
+  //set a user_id cookie containing the user's newly generated ID
   res.cookie("user_id", newUserID);
- 
-
- 
-
- 
-  
 
   //Redirect the user to the /urls page
   res.redirect(`/urls`);
-
-  //Test that the users object is properly being appended to. 
-  //You can insert a console.log or debugger prior to the redirect logic to inspect what data the object contains.
-  
 });
 
 app.get("/urls", (req, res) => {
