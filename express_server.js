@@ -1,3 +1,4 @@
+/* REQUIRES */
 const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
@@ -6,14 +7,46 @@ const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({ extended: true }));
 const crypto = require("crypto");
 const cookieParser = require("cookie-parser");
+app.use(cookieParser());
+
+/* RESOURCES */
+
 function generateRandomString() {
   return crypto.randomBytes(3).toString("hex");
 }
-//are we wrapping the url database in a hhttp method? how to route
+
 const urlDatabase = {
   b2xVn2: "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com",
 };
+
+// const templateVars = {
+//   username: req.cookies["username"],
+//   // ... any other vars
+// };
+
+// res.render("urls_index", templateVars);
+// // res.render("urls_new", templateVars);
+// // res.render("urls_show", templateVars);
+
+/*ROUTES*/
+
+app.post("/login", (req, res) => {
+  console.log(req.body.username);
+  //set a cookie named username to the value submitted in the request body via the login form
+  res.cookie("username", req.body.username);
+  const templateVars = {
+    username: req.cookies["username"],
+    // ... any other vars
+  };
+
+  res.render("urls_index", templateVars);
+  res.render("urls_new", templateVars);
+  res.render("urls_show", templateVars);
+  res.redirect(`/urls`);
+});
+
+/*ROUTES*/
 
 app.get("/", (req, res) => {
   res.send("Hello! There's nothing here. Sorry about that.");
@@ -23,19 +56,6 @@ app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
-
-app.post("/login", (req, res) => {
-  console.log(req.body.username);
-  //set a cookie named username to the value submitted in the request body via the login form
-  res.cookie('username', req.body.username)
-  res.redirect(`/urls`);
-});
-
-// const templateVars = {
-//   username: req.cookies["username"],
-//   // ... any other vars
-// };
-// res.render("urls_index", templateVars);
 
 app.post("/urls", (req, res) => {
   console.log(req.body); // Log the POST request body to the console
