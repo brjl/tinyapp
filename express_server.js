@@ -5,6 +5,7 @@ app.set("view engine", "ejs");
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({ extended: true }));
 const crypto = require("crypto");
+const cookieParser = require("cookie-parser");
 function generateRandomString() {
   return crypto.randomBytes(3).toString("hex");
 }
@@ -22,6 +23,19 @@ app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
+
+app.post("/login", (req, res) => {
+  console.log(req.body.username);
+  //set a cookie named username to the value submitted in the request body via the login form
+  res.cookie('username', req.body.username)
+  res.redirect(`/urls`);
+});
+
+// const templateVars = {
+//   username: req.cookies["username"],
+//   // ... any other vars
+// };
+// res.render("urls_index", templateVars);
 
 app.post("/urls", (req, res) => {
   console.log(req.body); // Log the POST request body to the console
@@ -49,15 +63,15 @@ app.get("/u/:shortURL", (req, res) => {
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-console.log('Deleting URL')
+  console.log("Deleting URL");
   delete urlDatabase[req.params.shortURL];
-  res.redirect(`/urls`)
+  res.redirect(`/urls`);
 });
 
-app.post("/urls/:shortURL", (req, res)=>{
-console.log('Edited URL')
-urlDatabase[req.params.shortURL] = req.body.longURL
-res.redirect(`/urls`);
+app.post("/urls/:shortURL", (req, res) => {
+  console.log("Edited URL");
+  urlDatabase[req.params.shortURL] = req.body.longURL;
+  res.redirect(`/urls`);
 });
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
