@@ -2,33 +2,46 @@
 const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
-app.set("view engine", "ejs");
+
 const bodyParser = require("body-parser");
-app.use(bodyParser.urlencoded({ extended: true }));
+
 const crypto = require("crypto");
 const cookieParser = require("cookie-parser");
-app.use(cookieParser());
 
-/* RESOURCES */
+/* MIDDLEWARE */
+app.set("view engine", "ejs");
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 function generateRandomString() {
   return crypto.randomBytes(3).toString("hex");
 }
+
+/* DATABASES */
 
 const urlDatabase = {
   b2xVn2: "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com",
 };
 
-// const templateVars = {
-//   username: req.cookies["username"],
-//   // ... any other vars
-// };
+const users = {
+  userRandomID: {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur",
+  },
+  user2RandomID: {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk",
+  },
+};
 
-// res.render("urls_index", templateVars);
-// res.render("urls_new", templateVars);
-// res.render("urls_show", templateVars);
 /*ROUTES*/
+
+app.get("/", (req, res) => {
+  res.send("Hello! There's nothing here. Sorry about that.");
+});
 
 app.post("/login", (req, res) => {
   console.log(req.body.username);
@@ -37,14 +50,51 @@ app.post("/login", (req, res) => {
   res.redirect(`/urls`);
 });
 
-/*ROUTES*/
+app.get("/register", (req, res) => {
+  console.log("register");
+  const templateVars = {
+    username: req.cookies["username"],
+  };
+  res.render("urls_register", templateVars);
+});
 
-app.get("/", (req, res) => {
-  res.send("Hello! There's nothing here. Sorry about that.");
+app.post("/register", (req, res) => {
+  //add a new user to the global users object. The user object should include the user's id, email and password
+  //set a user_id cookie containing the user's newly generated ID
+  //console.log(req.body)
+  //console.log(req.body.email)
+  //console.log(req.body.password)
+  let newUserID = generateRandomString();
+  const newUser = {
+    id: newUserID,
+    email: req.body.email,
+    password: req.body.password,
+  };
+
+  res.cookie("user_id", newUser.id);
+ 
+
+// for (const key in newUser) {
+  //   //console.log(newUser[{key}])
+
+  //    newUser[{key}]
+
+  // }
+  console.log(newUser);
+
+ 
+  
+
+  //Redirect the user to the /urls page
+  res.redirect(`/urls`);
+
+  //Test that the users object is properly being appended to. You can insert a console.log or debugger prior to the redirect logic to inspect what data the object contains.
+  //Also test that the user_id cookie is being set correctly upon redirection.
 });
 
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase, username: req.cookies["username"] };
+  //console.log(req.cookies["user_id"])
   res.render("urls_index", templateVars);
 });
 
@@ -77,12 +127,8 @@ app.get("/u/:shortURL", (req, res) => {
   res.redirect(longURL);
 });
 
-app.get("/register", (req, res)=>{
-console.log('register')
-const templateVars = {
-  username: req.cookies["username"],
-};
-res.render("urls_register",templateVars)
+app.get("/urls.json", (req, res) => {
+  res.json(urlDatabase);
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
@@ -103,13 +149,12 @@ app.post("/logout", (req, res) => {
   res.redirect(`/urls`);
 });
 
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
+app.get("*", (req, res) => {
+  res.status(404);
+  res.render("404");
 });
 
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
+/* SERVER LISTENING */
 
 app.listen(PORT, () => {
   console.log(`TinyApp server listening on port ${PORT}!`);
