@@ -13,9 +13,21 @@ app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+/* HELPER FUNCTIONS */
+
 function generateRandomString() {
   return crypto.randomBytes(3).toString("hex");
 }
+
+const userEmailExists = function (email) {
+  for (const user in users) {
+    if (users[user].email === email) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+};
 
 /* DATABASES */
 
@@ -59,7 +71,18 @@ app.get("/register", (req, res) => {
 });
 
 app.post("/register", (req, res) => {
-  //add a new user to the global users object. The user object should include the user's id, email and password
+  //If the e-mail or password are empty strings, send back a response with the 400 status code.
+  //If someone tries to register with an email that is already in the users object, send back a response with the 400 status code. Checking for an email in the users object is something we'll need to do in other routes as well. Consider creating an email lookup helper function to keep your code DRY
+
+  if (userEmailExists(req.body.email) === true) {
+    res.send(
+      400,
+      "An account already exists for this address. Please log in using this email"
+    );
+  }
+  if (!req.body.email || !req.body.password) {
+    res.send(400, "Please provide an email and password.");
+  }
 
   let newUserID = generateRandomString();
   const newUser = {
@@ -69,22 +92,23 @@ app.post("/register", (req, res) => {
   };
   users[newUserID] = newUser;
 
-  //set a user_id cookie containing the user's newly generated ID
   res.cookie("user_id", newUserID);
 
-  //Redirect the user to the /urls page
   res.redirect(`/urls`);
 });
 
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase, user: users[req.cookies["user_id"]] };
+  const templateVars = {
+    urls: urlDatabase,
+    user: users[req.cookies["user_id"]],
+  };
   //console.log(req.cookies["user_id"])
   res.render("urls_index", templateVars);
 });
 
 app.post("/urls", (req, res) => {
-  console.log(req.body); // Log the POST request body to the console
-  //res.send("Ok");         // Respond with 'Ok' (we will replace this       )
+  console.log(req.body);
+
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = req.body.longURL;
   res.redirect(`/urls/${shortURL}`);
