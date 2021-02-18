@@ -51,7 +51,7 @@ const users = {
     email: "user@example.com",
     password: "1234",
   },
-  i3BoGr: {
+  aJ48lW: {
     id: "aJ48lW",
     email: "user2@example.com",
     password: "1234",
@@ -79,13 +79,15 @@ app.get("/register", (req, res) => {
 });
 
 app.post("/register", (req, res) => {
+  const email = req.body.email
+  const password = req.body.password
   if (userEmailExists(req.body.email)) {
    
   res
       .status(401)
       .send("An account already exists for this address. Please log in using this email");
   }
-  if (!req.body.email || !req.body.password) {
+  if (!email || !password) {
     res
       .status(401)
       .send("Please provide an email and password.");
@@ -94,8 +96,8 @@ app.post("/register", (req, res) => {
   let newUserID = generateRandomString();
   const newUser = {
     id: newUserID,
-    email: req.body.email,
-    password: req.body.password,
+    email: email,
+    password: password,
   };
   users[newUserID] = newUser;
   res.cookie("user_id", newUserID);
@@ -172,7 +174,7 @@ app.get("/urls/new", (req, res) => {
 
   if (!req.cookies["user_id"]) {
     res.redirect("/login");
-  } else {
+  } if (req.cookies["user_id"]) {
     res.render("urls_new", templateVars);
   }
 });
@@ -181,15 +183,27 @@ app.get("/urls/:shortURL", (req, res) => {
   const user = users[req.cookies["user_id"]]
   const shortURL = req.params.shortURL
   const longURL = urlDatabase[req.params.shortURL].longURL
+  const userID = urlDatabase[req.params.shortURL].userID
   const templateVars = {
     shortURL,
     longURL,
     user
   };
+  if (user.id === userID) {
+    res.render("urls_show", templateVars);
+    
+  
+  } if (user.id === undefined || user.id !== userID) {
+    res
+      .status(403)
+      .send("You don't have permission to do this");
+  }
+
   // console.log(longURL)
   // console.log(shortURL)
-  // console.log(user)
-  res.render("urls_show", templateVars);
+  console.log(user)
+  console.log(userID)
+  //res.render("urls_show", templateVars);
 });
 
 app.get("/u/:shortURL", (req, res) => {
@@ -199,19 +213,23 @@ app.get("/u/:shortURL", (req, res) => {
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => { //WIP
-  console.log("Deleting URL");
-  const userID = req.cookies["user_id"];
-  const userUrls = urlsForUser(userID);
-  if (userUrls[req.params.shortURL]) {
+  //console.log("Deleting URL");
+  const userID = urlDatabase[req.params.shortURL].userID
+  const user = users[req.cookies["user_id"]]
+ 
+  if (user.id === userID) {
     delete urlDatabase[req.params.shortURL];
     res.redirect('/urls');
+    
   
-  } else {
+  } if (user.id === undefined || user.id !== userID) {
     res
       .status(403)
       .send("You don't have permission to do this");
   }
  
+ console.log('user:', user)
+ console.log('user ID:', userID)
 });
 
 app.post("/urls/:shortURL", (req, res) => {
