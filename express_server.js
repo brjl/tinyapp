@@ -189,16 +189,16 @@ app.get("/urls/:shortURL", (req, res) => {
     longURL,
     user
   };
-  if (user.id === userID) {
-    res.render("urls_show", templateVars);
-    
-  
-  } if (user.id === undefined || user.id !== userID) {
+  if (user === undefined || user.id !== userID) {
     res
       .status(403)
       .send("You don't have permission to do this");
   }
-
+  if (user.id === userID) {
+    res.render("urls_show", templateVars);
+    
+  
+  }
   // console.log(longURL)
   // console.log(shortURL)
   console.log(user)
@@ -216,18 +216,19 @@ app.post("/urls/:shortURL/delete", (req, res) => { //WIP
   //console.log("Deleting URL");
   const userID = urlDatabase[req.params.shortURL].userID
   const user = users[req.cookies["user_id"]]
- 
+  
+  if (user === undefined || user.id !== userID) {
+    res
+      .status(403)
+      .send("You don't have permission to do this");
+  }
   if (user.id === userID) {
     delete urlDatabase[req.params.shortURL];
     res.redirect('/urls');
     
   
-  } if (user.id === undefined || user.id !== userID) {
-    res
-      .status(403)
-      .send("You don't have permission to do this");
   }
- 
+  
  console.log('user:', user)
  console.log('user ID:', userID)
 });
