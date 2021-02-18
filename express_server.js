@@ -21,18 +21,23 @@ const userEmailExists = function (email) {
   for (const user in users) {
     if (users[user].email === email) {
       return user;
-    } 
-     
-    
+    }
   }
   return null;
+};
+
+const urlsForUser = function (id) {
+  let visibleURL = {};
+  for (const url in urlDatabase) {
+    if (urlDatabase[url].userID === id) [(visibleURL[url] = urlDatabase[url])];
+  }
 };
 
 /* DATABASES */
 
 const urlDatabase = {
   b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
-  i3BoGr: { longURL: "https://www.discogs.com", userID: "aJ48lW" }
+  i3BoGr: { longURL: "https://www.discogs.com", userID: "aJ48lW" },
 };
 
 const users = {
@@ -120,7 +125,7 @@ app.post("/login", (req, res) => {
   }
   if (user && users[user].password === req.body.password) {
     console.log("Success! You are logged in!");
-    res.cookie('user_id', user);;
+    res.cookie("user_id", user);
     //console.log(users[req.cookies["user_id"]])
     res.redirect(`/urls`);
   }
@@ -128,7 +133,7 @@ app.post("/login", (req, res) => {
 
 app.get("/urls", (req, res) => {
   const templateVars = {
-    urls: urlDatabase,
+    urls: urlsForUser(req.cookies["user_id"]),
     user: users[req.cookies["user_id"]],
   };
   res.render("urls_index", templateVars);
@@ -150,21 +155,19 @@ app.get("/urls/new", (req, res) => {
   const templateVars = {
     user: users[req.cookies["user_id"]],
   };
-  
+
   if (!req.cookies["user_id"]) {
-    res.redirect("/login")
+    res.redirect("/login");
   } else {
-    
     res.render("urls_new", templateVars);
   }
-  
 });
 
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL].longURL,
-    user: users[req.cookies["user_id"]],
+    user: urlDatabase[req.params.shortURL].userID,
   };
   res.render("urls_show", templateVars);
 });
