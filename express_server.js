@@ -1,10 +1,8 @@
 /* REQUIRES */
 const express = require("express");
 const app = express();
-const PORT = 8080; // default port 8080
-
+const PORT = 8080;
 const bodyParser = require("body-parser");
-
 const crypto = require("crypto");
 const cookieParser = require("cookie-parser");
 
@@ -22,11 +20,12 @@ function generateRandomString() {
 const userEmailExists = function (email) {
   for (const user in users) {
     if (users[user].email === email) {
-      return true;
-    } else {
-      return false;
-    }
+      return user;
+    } 
+     
+    
   }
+  return null;
 };
 
 /* DATABASES */
@@ -55,20 +54,8 @@ app.get("/", (req, res) => {
   res.send("Hello! There's nothing here. Sorry about that.");
 });
 
-app.get("/login", (req, res) => {
-  const templateVars = {
-    user: users[req.cookies["user_id"]],
-  };
-  res.render("urls_login", templateVars)
-
-  
-});
-
-app.post("/login", (req, res) => {
-  console.log(req.body.username);
-  //set a cookie named username to the value submitted in the request body via the login form
-  res.cookie("username", req.body.username);
-  res.redirect(`/urls`);
+app.get("/urls.json", (req, res) => {
+  res.json(urlDatabase);
 });
 
 app.get("/register", (req, res) => {
@@ -80,10 +67,7 @@ app.get("/register", (req, res) => {
 });
 
 app.post("/register", (req, res) => {
-  //If the e-mail or password are empty strings, send back a response with the 400 status code.
-  //If someone tries to register with an email that is already in the users object, send back a response with the 400 status code. Checking for an email in the users object is something we'll need to do in other routes as well. Consider creating an email lookup helper function to keep your code DRY
-
-  if (userEmailExists(req.body.email) === true) {
+  if (userEmailExists(req.body.email)) {
     res.send(
       400,
       "An account already exists for this address. Please log in using this email"
@@ -92,7 +76,6 @@ app.post("/register", (req, res) => {
   if (!req.body.email || !req.body.password) {
     res.send(400, "Please provide an email and password.");
   }
-
   let newUserID = generateRandomString();
   const newUser = {
     id: newUserID,
@@ -100,10 +83,47 @@ app.post("/register", (req, res) => {
     password: req.body.password,
   };
   users[newUserID] = newUser;
-
   res.cookie("user_id", newUserID);
-
   res.redirect(`/urls`);
+});
+
+app.get("/login", (req, res) => {
+  const templateVars = {
+    user: users[req.cookies["user_id"]],
+  };
+  res.render("urls_login", templateVars);
+});
+
+/*
+
+A user sees the correct information in the header
+email: "user@example.com",
+    password: "purple-monkey-dinosaur",
+*/
+
+app.post("/login", (req, res) => {
+  let user = userEmailExists(req.body.email);
+  if (!user) {
+    console.log("no user email registration found");
+    res
+      .status(403)
+      .send("There is no account registered with that email. Please register.");
+  }
+
+  if (user && users[user].password !== req.body.password) {
+    console.log("password and email dont match");
+    res
+      .status(403)
+      .send(
+        "Your email and password do not match. Please try logging in again."
+      );
+  }
+  if (user && users[user].password === req.body.password) {
+    console.log("Success! You are logged in!");
+    res.cookie('user_id', user);;
+    //console.log(users[req.cookies["user_id"]])
+    res.redirect(`/urls`);
+  }
 });
 
 app.get("/urls", (req, res) => {
@@ -111,7 +131,6 @@ app.get("/urls", (req, res) => {
     urls: urlDatabase,
     user: users[req.cookies["user_id"]],
   };
-  //console.log(req.cookies["user_id"])
   res.render("urls_index", templateVars);
 });
 
@@ -127,7 +146,12 @@ app.get("/urls/new", (req, res) => {
   const templateVars = {
     user: users[req.cookies["user_id"]],
   };
-  res.render("urls_new", templateVars);
+  if (req.cookies["user_id"] === false) {
+    res.redirect("/login")
+  } else {
+    res.render("urls_new", templateVars);
+  }
+  
 });
 
 app.get("/urls/:shortURL", (req, res) => {
@@ -144,10 +168,6 @@ app.get("/u/:shortURL", (req, res) => {
   res.redirect(longURL);
 });
 
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
-
 app.post("/urls/:shortURL/delete", (req, res) => {
   console.log("Deleting URL");
   delete urlDatabase[req.params.shortURL];
@@ -162,7 +182,6 @@ app.post("/urls/:shortURL", (req, res) => {
 
 app.post("/logout", (req, res) => {
   res.clearCookie("user_id");
-
   res.redirect(`/urls`);
 });
 
