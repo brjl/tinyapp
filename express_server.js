@@ -5,6 +5,7 @@ const PORT = 8080;
 const bodyParser = require("body-parser");
 const crypto = require("crypto");
 const cookieParser = require("cookie-parser");
+const bcrypt = require("bcryptjs");
 
 /* MIDDLEWARE */
 app.set("view engine", "ejs");
@@ -30,13 +31,11 @@ const urlsForUser = function (id, urlDatabase) {
   let visibleURL = {};
   for (const shortURL in urlDatabase) {
     if (urlDatabase[shortURL].userID === id) {
-      visibleURL[shortURL] = urlDatabase[shortURL]
-    };
+      visibleURL[shortURL] = urlDatabase[shortURL];
+    }
   }
-  return visibleURL
+  return visibleURL;
 };
-
-
 
 /* DATABASES */
 
@@ -46,19 +45,18 @@ const urlDatabase = {
 };
 
 const users = {
-  userRandomID: {
-    id: "userRandomID",
-    email: "user@example.com",
-    password: "1234",
-  },
   aJ48lW: {
     id: "aJ48lW",
     email: "user2@example.com",
     password: "1234",
   },
+
+  userID200: {
+    id: "718d78",
+    email: "d@d.com",
+    password: "$2a$10$y6dVwLQDI.hfjCcM/PJrVO8nQvX9f5mkaXl3kO6hC4cSpMiyx1Jie",
+  },
 };
-
-
 
 /*ROUTES*/
 
@@ -79,29 +77,34 @@ app.get("/register", (req, res) => {
 });
 
 app.post("/register", (req, res) => {
-  const email = req.body.email
-  const password = req.body.password
-  if (userEmailExists(req.body.email)) {
-   
-  res
-      .status(401)
-      .send("An account already exists for this address. Please log in using this email");
-  }
-  if (!email || !password) {
-    res
-      .status(401)
-      .send("Please provide an email and password.");
-    
-  }
-  let newUserID = generateRandomString();
-  const newUser = {
-    id: newUserID,
-    email: email,
-    password: password,
-  };
-  users[newUserID] = newUser;
-  res.cookie("user_id", newUserID);
-  res.redirect(`/urls`);
+  const email = req.body.email;
+  const password = req.body.password;
+
+  bcrypt.genSalt(10, (err, salt) => {
+    bcrypt.hash(password, salt, (err, hash) => {
+      if (userEmailExists(email)) {
+        res
+          .status(401)
+          .send(
+            "An account already exists for this address. Please log in using this email"
+          );
+      }
+
+      if (!email || !password) {
+        res.status(401).send("Please provide an email and password.");
+      }
+
+      let newUserID = generateRandomString();
+      users[newUserID] = {
+        id: newUserID,
+        email,
+        password: hash,
+      };
+      console.log(users[newUserID]);
+      res.cookie("user_id", newUserID);
+      res.redirect(`/urls`);
+    });
+  });
 });
 
 app.get("/login", (req, res) => {
@@ -111,47 +114,41 @@ app.get("/login", (req, res) => {
   res.render("urls_login", templateVars);
 });
 
-/*
-
-A user sees the correct information in the header
-email: "user@example.com",
-    password: "purple-monkey-dinosaur",
-*/
-
 app.post("/login", (req, res) => {
-  let user = userEmailExists(req.body.email);
-  if (!user) {
-    console.log("no user email registration found");
+  const userEmailName = userEmailExists(req.body.email);
+  const user = users[userEmailName];
+  const password = req.body.password;
+  if (!userEmailName) {
     res
       .status(401)
       .send("There is no account registered with that email. Please register.");
   }
 
-  if (user && users[user].password !== req.body.password) {
-    console.log("password and email dont match");
-    res
-      .status(401)
-      .send(
-        "Your email and password do not match. Please try logging in again."
-      );
-  }
-  if (user && users[user].password === req.body.password) {
-    console.log("Success! You are logged in!");
-    res.cookie("user_id", user);
-    //console.log(users[req.cookies["user_id"]])
-    res.redirect(`/urls`);
-  }
+  bcrypt.compare(password, user.password, (err, result) => {
+    if (result) {
+      console.log("Success! You are logged in!");
+      res.cookie("user_id", user);
+      res.redirect(`/urls`);
+    }
+
+    if (!result) {
+      res
+        .status(401)
+        .send(
+          "Your email and password do not match. Please try logging in again."
+        );
+    }
+  });
 });
 
 app.get("/urls", (req, res) => {
-
   const templateVars = {
     urls: urlsForUser(req.cookies["user_id"], urlDatabase),
     user: users[req.cookies["user_id"]],
   };
-  console.log(req.cookies["user_id"])
-  console.log('Is this undefined?:', urlsForUser(req.cookies["user_id"]))
-  //console.log(urlDatabase[req.params.shortURL].userID)
+  // console.log(req.cookies["user_id"])
+  // console.log('Is this undefined?:', urlsForUser(req.cookies["user_id"]))
+  // //console.log(urlDatabase[req.params.shortURL].userID)
   res.render("urls_index", templateVars);
 });
 
@@ -163,81 +160,70 @@ app.post("/urls", (req, res) => {
     longURL: req.body.longURL,
     userID: req.cookies["user_id"],
   };
-  //console.log(urlDatabase[shortURL])
+
   res.redirect(`/urls/${shortURL}`);
 });
 
 app.get("/urls/new", (req, res) => {
+  const user = users[req.cookies["user_id"]];
+  const userID = req.cookies["user_id"];
   const templateVars = {
-    user: users[req.cookies["user_id"]],
+    user,
   };
 
-  if (!req.cookies["user_id"]) {
+  if (!userID) {
     res.redirect("/login");
-  } if (req.cookies["user_id"]) {
+  }
+  if (userID) {
     res.render("urls_new", templateVars);
   }
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  const user = users[req.cookies["user_id"]]
-  const shortURL = req.params.shortURL
-  const longURL = urlDatabase[req.params.shortURL].longURL
-  const userID = urlDatabase[req.params.shortURL].userID
+  const user = users[req.cookies["user_id"]];
+  const shortURL = req.params.shortURL;
+  const longURL = urlDatabase[req.params.shortURL].longURL;
+  const userID = urlDatabase[req.params.shortURL].userID;
   const templateVars = {
     shortURL,
     longURL,
-    user
+    user,
   };
   if (user === undefined || user.id !== userID) {
-    res
-      .status(403)
-      .send("You don't have permission to do this");
+    res.status(403).send("You don't have permission to do this");
   }
   if (user.id === userID) {
     res.render("urls_show", templateVars);
-    
-  
   }
-  // console.log(longURL)
-  // console.log(shortURL)
-  console.log(user)
-  console.log(userID)
-  //res.render("urls_show", templateVars);
 });
 
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL].longURL; //undefined
-  //console.log(longURL)
+
   res.redirect(longURL);
 });
 
-app.post("/urls/:shortURL/delete", (req, res) => { //WIP
-  //console.log("Deleting URL");
-  const userID = urlDatabase[req.params.shortURL].userID
-  const user = users[req.cookies["user_id"]]
-  
+app.post("/urls/:shortURL/delete", (req, res) => {
+  console.log("Deleting URL");
+  const userID = urlDatabase[req.params.shortURL].userID;
+  const user = users[req.cookies["user_id"]];
+
   if (user === undefined || user.id !== userID) {
-    res
-      .status(403)
-      .send("You don't have permission to do this");
+    res.status(403).send("You don't have permission to do this");
   }
   if (user.id === userID) {
     delete urlDatabase[req.params.shortURL];
-    res.redirect('/urls');
-    
-  
+    res.redirect("/urls");
   }
-  
- console.log('user:', user)
- console.log('user ID:', userID)
+
+  console.log("user:", user);
+  console.log("user ID:", userID);
 });
 
 app.post("/urls/:shortURL", (req, res) => {
-  console.log("Edited URL");
+  console.log("Edit URL");
   urlDatabase[req.params.shortURL].longURL = req.body.longURL;
 
- 
   res.redirect(`/urls`);
 });
 
@@ -246,9 +232,8 @@ app.post("/logout", (req, res) => {
   res.redirect(`/urls`);
 });
 
-app.get("/anon", (req,res)=>{
+app.get("/anon", (req, res) => {
   res.render("urls_anon");
-
 });
 
 app.get("*", (req, res) => {
