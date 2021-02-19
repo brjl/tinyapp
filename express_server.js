@@ -173,13 +173,12 @@ app.get("/urls/new", (req, res) => {
 app.get("/urls/:shortURL", (req, res) => {
   const user = req.session.user_id;
   const shortURL = req.params.shortURL;
-  const longURL = urlDatabase[req.params.shortURL].longURL;
   const userID = urlDatabase[req.params.shortURL].userID;
   const email = req.body.email;
   const templateVars = {
     email,
     shortURL,
-    longURL,
+    longURL: urlDatabase[req.params.shortURL].longURL,
     user,
   };
 
