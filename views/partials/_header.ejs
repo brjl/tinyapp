@@ -27,7 +27,7 @@
       </div>
 
     <% } else{ %>
-      <a class="navbar-item">Logged in as: <%= user %></a>
+      <a class="navbar-item">Logged in <%= user[email] %></a>
     <form class="form-inline" action="/logout" method="POST">
       <button
         type="submit"

@@ -52,8 +52,10 @@ app.get("/urls.json", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
+  const email = req.body.email;
   const templateVars = {
     user: users[req.session.user_id],
+    email,
   };
   res.render("urls_register", templateVars);
 });
@@ -90,8 +92,10 @@ app.post("/register", (req, res) => {
 });
 
 app.get("/login", (req, res) => {
+  const email = req.body.email;
   const templateVars = {
     user: users[req.session.user_id],
+    email,
   };
   res.render("urls_login", templateVars);
 });
@@ -122,12 +126,21 @@ app.post("/login", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
+  const email = req.body.email;
+  const user = req.session.user_id
   const templateVars = {
     urls: urlsForUser(req.session.user_id, urlDatabase),
     user: req.session.user_id,
+    email,
   };
 
-  res.render("urls_index", templateVars);
+  if (!user) {
+    res.status(403).send("You don't have permission to do this");
+  } else {
+    res.render("urls_index", templateVars);
+  }
+
+  
 });
 
 app.post("/urls", (req, res) => {
@@ -142,11 +155,19 @@ app.post("/urls", (req, res) => {
 
 app.get("/urls/new", (req, res) => {
   const user = req.session.user_id;
+  const email = req.body.email;
   const templateVars = {
     user,
+    email,
   };
 
-  res.render("urls_new", templateVars);
+  if (!user) {
+    res.status(403).send("You don't have permission to do this");
+  } else {
+    res.render("urls_new", templateVars);
+  }
+
+  
 });
 
 app.get("/urls/:shortURL", (req, res) => {
@@ -154,7 +175,9 @@ app.get("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[req.params.shortURL].longURL;
   const userID = urlDatabase[req.params.shortURL].userID;
+  const email = req.body.email;
   const templateVars = {
+    email,
     shortURL,
     longURL,
     user,
