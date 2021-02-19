@@ -4,18 +4,19 @@ const app = express();
 const PORT = 8080;
 const bodyParser = require("body-parser");
 const crypto = require("crypto");
-
 const bcrypt = require("bcryptjs");
-const cookieSession = require('cookie-session');
+const cookieSession = require("cookie-session");
+//const { userEmailExists } = require('./helpers');
 
 /* MIDDLEWARE */
 app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({ extended: true }));
-
-app.use(cookieSession({
-  name: 'session',
-  keys: ['larry', 'curly', 'moe']
-}));
+app.use(
+  cookieSession({
+    name: "session",
+    keys: ["larry", "curly", "moe"],
+  })
+);
 
 /* HELPER FUNCTIONS */
 
@@ -88,7 +89,7 @@ app.post("/register", (req, res) => {
   bcrypt.genSalt(10, (err, salt) => {
     bcrypt.hash(password, salt, (err, hash) => {
       if (userEmailExists(email)) {
-        res
+        return res
           .status(401)
           .send(
             "An account already exists for this address. Please log in using this email"
@@ -96,7 +97,7 @@ app.post("/register", (req, res) => {
       }
 
       if (!email || !password) {
-        res.status(401).send("Please provide an email and password.");
+        return res.status(401).send("Please provide an email and password."); //problem
       }
 
       let newUserID = generateRandomString();
@@ -106,8 +107,8 @@ app.post("/register", (req, res) => {
         password: hash,
       };
       console.log(users[newUserID]);
-    
-      req.session.user_id = newUserID
+
+      req.session.user_id = newUserID;
       res.redirect(`/urls`);
     });
   });
@@ -119,8 +120,6 @@ app.get("/login", (req, res) => {
   };
   res.render("urls_login", templateVars);
 });
-
-
 
 app.post("/login", (req, res) => {
   const userEmailName = userEmailExists(req.body.email);
@@ -135,8 +134,8 @@ app.post("/login", (req, res) => {
   bcrypt.compare(password, user.password, (err, result) => {
     if (result) {
       console.log("Success! You are logged in!");
-      
-      req.session.user_id = user
+
+      req.session.user_id = user;
       res.redirect(`/urls`);
     }
 
@@ -246,8 +245,7 @@ app.get("/anon", (req, res) => {
 });
 
 app.get("*", (req, res) => {
-  res.status(404);
-  res.render("404");
+  res.status(404).send("You've taken a wrong turn somewhere. Go back!");
 });
 
 /* SERVER LISTENING */
