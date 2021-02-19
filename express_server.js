@@ -3,8 +3,11 @@ const express = require("express");
 const app = express();
 const PORT = 8080;
 const bodyParser = require("body-parser");
-const crypto = require("crypto");
-
+const {
+  userEmailExists,
+  generateRandomString,
+  urlsForUser,
+} = require("./helpers");
 const bcrypt = require("bcryptjs");
 const cookieSession = require("cookie-session");
 
@@ -19,33 +22,7 @@ app.use(
   })
 );
 
-/* HELPER FUNCTIONS */
-
-function generateRandomString() {
-  return crypto.randomBytes(3).toString("hex");
-}
-
-const userEmailExists = function (email) {
-  for (const user in users) {
-    if (users[user].email === email) {
-      return user;
-    }
-  }
-  return null;
-};
-
-const urlsForUser = function (id, urlDatabase) {
-  let visibleURL = {};
-  for (const shortURL in urlDatabase) {
-    if (urlDatabase[shortURL].userID === id) {
-      visibleURL[shortURL] = urlDatabase[shortURL];
-    }
-  }
-  return visibleURL;
-};
-
 /* DATABASES */
-
 const urlDatabase = {
   b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
   i3BoGr: { longURL: "https://www.discogs.com", userID: "aJ48lW" },
@@ -66,9 +43,8 @@ const users = {
 };
 
 /*ROUTES*/
-
 app.get("/", (req, res) => {
-  res.redirect('/login');
+  res.redirect("/login");
 });
 
 app.get("/urls.json", (req, res) => {
@@ -76,7 +52,6 @@ app.get("/urls.json", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  console.log("register");
   const templateVars = {
     user: users[req.session.user_id],
   };
@@ -89,7 +64,7 @@ app.post("/register", (req, res) => {
 
   bcrypt.genSalt(10, (err, salt) => {
     bcrypt.hash(password, salt, (err, hash) => {
-      if (userEmailExists(email)) {
+      if (userEmailExists(email, users)) {
         return res
           .status(401)
           .send(
@@ -107,7 +82,6 @@ app.post("/register", (req, res) => {
         email,
         password: hash,
       };
-      console.log(users[newUserID]);
 
       req.session.user_id = newUserID;
       res.redirect(`/urls`);
@@ -123,7 +97,7 @@ app.get("/login", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  const userEmailName = userEmailExists(req.body.email);
+  const userEmailName = userEmailExists(req.body.email, users);
   const user = users[userEmailName];
   const password = req.body.password;
   if (!userEmailName) {
@@ -134,12 +108,9 @@ app.post("/login", (req, res) => {
 
   bcrypt.compare(password, user.password, (err, result) => {
     if (result) {
-      console.log("Success! You are logged in!");
-
       req.session.user_id = user.id;
       res.redirect(`/urls`);
     }
-
     if (!result) {
       res
         .status(401)
@@ -160,8 +131,6 @@ app.get("/urls", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  console.log(req.body);
-
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = {
     longURL: req.body.longURL,
@@ -173,7 +142,6 @@ app.post("/urls", (req, res) => {
 
 app.get("/urls/new", (req, res) => {
   const user = req.session.user_id;
-  //const userID = req.session.user_id;
   const templateVars = {
     user,
   };
@@ -192,7 +160,7 @@ app.get("/urls/:shortURL", (req, res) => {
     user,
   };
 
-  if (user === undefined || user !== userID) { // maybe......
+  if (user === undefined || user !== userID) {
     res.status(403).send("You don't have permission to do this");
   }
   if (user === userID) {
@@ -207,14 +175,8 @@ app.get("/u/:shortURL", (req, res) => {
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  console.log("Deleting URL");
   const userID = urlDatabase[req.params.shortURL].userID;
   const user = req.session.user_id;
-console.log(userID)
-console.log(user)
-console.log(urlDatabase[req.params.shortURL])
-
-
   if (user === undefined || user !== userID) {
     res.status(403).send("You don't have permission to do this");
   }
@@ -222,18 +184,11 @@ console.log(urlDatabase[req.params.shortURL])
     delete urlDatabase[req.params.shortURL];
     res.redirect("/urls");
   }
-
-  console.log("user:", user);
-  console.log("user ID:", userID);
 });
-
 app.post("/urls/:shortURL", (req, res) => {
-  console.log("Edit URL");
   urlDatabase[req.params.shortURL].longURL = req.body.longURL;
-
   res.redirect(`/urls`);
 });
-
 app.post("/logout", (req, res) => {
   req.session = null;
   res.redirect(`/login`);
@@ -244,7 +199,6 @@ app.get("*", (req, res) => {
 });
 
 /* SERVER LISTENING */
-
 app.listen(PORT, () => {
   console.log(`TinyApp server listening on port ${PORT}!`);
 });
