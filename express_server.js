@@ -6,7 +6,11 @@ const bodyParser = require("body-parser");
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const cookieSession = require("cookie-session");
-//const { userEmailExists } = require('./helpers');
+const {
+  userEmailExists,
+  generateRandomString,
+  urlsForUser,
+} = require("./helpers");
 
 /* MIDDLEWARE */
 app.set("view engine", "ejs");
@@ -18,33 +22,7 @@ app.use(
   })
 );
 
-/* HELPER FUNCTIONS */
-
-function generateRandomString() {
-  return crypto.randomBytes(3).toString("hex");
-}
-
-const userEmailExists = function (email) {
-  for (const user in users) {
-    if (users[user].email === email) {
-      return user;
-    }
-  }
-  return null;
-};
-
-const urlsForUser = function (id, urlDatabase) {
-  let visibleURL = {};
-  for (const shortURL in urlDatabase) {
-    if (urlDatabase[shortURL].userID === id) {
-      visibleURL[shortURL] = urlDatabase[shortURL];
-    }
-  }
-  return visibleURL;
-};
-
 /* DATABASES */
-
 const urlDatabase = {
   b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
   i3BoGr: { longURL: "https://www.discogs.com", userID: "aJ48lW" },
@@ -65,7 +43,6 @@ const users = {
 };
 
 /*ROUTES*/
-
 app.get("/", (req, res) => {
   res.send("Hello! There's nothing here. Sorry about that.");
 });
@@ -88,7 +65,7 @@ app.post("/register", (req, res) => {
 
   bcrypt.genSalt(10, (err, salt) => {
     bcrypt.hash(password, salt, (err, hash) => {
-      if (userEmailExists(email)) {
+      if (userEmailExists(email, users)) {
         return res
           .status(401)
           .send(
@@ -122,7 +99,7 @@ app.get("/login", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  const userEmailName = userEmailExists(req.body.email);
+  const userEmailName = userEmailExists(req.body.email, users);
   const user = users[userEmailName];
   const password = req.body.password;
   if (!userEmailName) {
@@ -154,9 +131,6 @@ app.get("/urls", (req, res) => {
     urls: urlsForUser(req.session["user_id"], urlDatabase),
     user: users[req.session["user_id"]],
   };
-  // console.log(req.session["user_id"])
-  // console.log('Is this undefined?:', urlsForUser(req.session["user_id"]))
-  // //console.log(urlDatabase[req.params.shortURL].userID)
   res.render("urls_index", templateVars);
 });
 
@@ -249,7 +223,6 @@ app.get("*", (req, res) => {
 });
 
 /* SERVER LISTENING */
-
 app.listen(PORT, () => {
   console.log(`TinyApp server listening on port ${PORT}!`);
 });
