@@ -153,7 +153,7 @@ app.get("/urls/new", (req, res) => {
   const user = req.session.user_id;
   const email = req.body.email;
   const templateVars = {
-    user,
+    user: users[user],
     email,
   };
 
@@ -173,7 +173,7 @@ app.get("/urls/:shortURL", (req, res) => {
     email,
     shortURL,
     longURL: urlDatabase[req.params.shortURL].longURL,
-    user,
+    user: users[user],
   };
 
   if (user === undefined || user !== userID) {
