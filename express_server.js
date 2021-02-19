@@ -34,8 +34,8 @@ const users = {
     password: "1234",
   },
 
-  userID200: {
-    id: "718d78",
+  user: {
+    id: "user",
     email: "d@d.com",
     password: "$2a$10$y6dVwLQDI.hfjCcM/PJrVO8nQvX9f5mkaXl3kO6hC4cSpMiyx1Jie",
   },
@@ -91,10 +91,8 @@ app.post("/register", (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-  const email = req.body.email;
   const templateVars = {
-    user: users[req.session.user_id],
-    email,
+    user: null,
   };
   res.render("urls_login", templateVars);
 });
@@ -103,6 +101,7 @@ app.post("/login", (req, res) => {
   const userEmailName = userEmailExists(req.body.email, users);
   const user = users[userEmailName];
   const password = req.body.password;
+
   if (!userEmailName) {
     res
       .status(401)
@@ -125,12 +124,12 @@ app.post("/login", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const email = req.body.email;
-  const user = req.session.user_id
+  const user = req.session.user_id;
+  console.log("this is users", users);
+
   const templateVars = {
     urls: urlsForUser(req.session.user_id, urlDatabase),
-    user: req.session.user_id,
-    email,
+    user: users[user],
   };
 
   if (!user) {
@@ -138,8 +137,6 @@ app.get("/urls", (req, res) => {
   } else {
     res.render("urls_index", templateVars);
   }
-
-  
 });
 
 app.post("/urls", (req, res) => {
@@ -165,8 +162,6 @@ app.get("/urls/new", (req, res) => {
   } else {
     res.render("urls_new", templateVars);
   }
-
-  
 });
 
 app.get("/urls/:shortURL", (req, res) => {
