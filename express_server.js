@@ -9,6 +9,7 @@ const {
   urlsForUser,
 } = require("./helpers");
 const bcrypt = require("bcryptjs");
+const methodOverride = require("method-override");
 const cookieSession = require("cookie-session");
 
 /* MIDDLEWARE */
@@ -20,6 +21,7 @@ app.use(
     keys: ["larry", "curly", "moe"],
   })
 );
+app.use(methodOverride("_method"));
 
 /* DATABASES */
 const urlDatabase = {
@@ -28,12 +30,6 @@ const urlDatabase = {
 };
 
 const users = {
-  aJ48lW: {
-    id: "aJ48lW",
-    email: "user2@example.com",
-    password: "1234",
-  },
-
   user: {
     id: "user",
     email: "d@d.com",
@@ -77,7 +73,7 @@ app.post("/register", (req, res) => {
         return res.status(401).send("Please provide an email and password.");
       }
 
-      let newUserID = generateRandomString();
+      const newUserID = generateRandomString();
       users[newUserID] = {
         id: newUserID,
         email,
@@ -97,7 +93,7 @@ app.get("/login", (req, res) => {
   res.render("urls_login", templateVars);
 });
 
-app.post("/login", (req, res) => {
+app.patch("/login", (req, res) => {
   const userEmailName = userEmailExists(req.body.email, users);
   const user = users[userEmailName];
   const password = req.body.password;
@@ -190,7 +186,7 @@ app.get("/u/:shortURL", (req, res) => {
   res.redirect(longURL);
 });
 
-app.post("/urls/:shortURL/delete", (req, res) => {
+app.delete("/urls/:shortURL/delete", (req, res) => {
   const userID = urlDatabase[req.params.shortURL].userID;
   const user = req.session.user_id;
   if (user === undefined || user !== userID) {
@@ -201,7 +197,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
     res.redirect("/urls");
   }
 });
-app.post("/urls/:shortURL", (req, res) => {
+app.patch("/urls/:shortURL", (req, res) => {
   urlDatabase[req.params.shortURL].longURL = req.body.longURL;
   res.redirect(`/urls`);
 });
